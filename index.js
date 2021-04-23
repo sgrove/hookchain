@@ -64,6 +64,6 @@ app.get("/app/:appId/chain/:chainId", async function (req, res) {
     .send(response?.body || "");
 });
 
-app.listen(9000, function () {
-  console.log("Example app listening on port 9000!");
-});
+const port = process.env.PORT || 3000;
+
+app.listen(port, () => console.log(`Server running on ${port}`));

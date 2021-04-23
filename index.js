@@ -9,7 +9,7 @@ const callChain = async (params) => {
     `https://serve.onegraph.com/graphql?app_id=${appId}`,
     {
       method: "POST",
-      "Content-Type": "application/json",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         doc_id: params.chainId,
         operationName: "ExecuteChainMutation_httpRouteTest",
@@ -19,6 +19,23 @@ const callChain = async (params) => {
   );
 
   return response.json();
+};
+
+const forwardResonse = async ({ forward }) => {
+  console.log("Forwarding: ");
+  console.log({
+    uri: forward.uri,
+    method: forward.method,
+    headers: forward.headers,
+    body: forward.body,
+  });
+  const response = await fetch(forward.uri, {
+    method: forward.method,
+    headers: forward.headers,
+    body: forward.body,
+  });
+
+  return response.text();
 };
 
 app.get("/app/:appId/chain/:chainId", async function (req, res) {
@@ -58,12 +75,25 @@ app.get("/app/:appId/chain/:chainId", async function (req, res) {
     response?.headers ? [response?.headers] : []
   );
 
+  const forward = response?.forward;
+  console.log("response: ", response);
+
+  console.log("Forward: ", forward);
+
+  delete response.__onegraph_forward;
+
+  if (!!forward) {
+    const forwardResponse = await forwardResonse(response);
+    console.log("Forwarded response: ", forward);
+    console.log(forwardResonse);
+  }
+
   res
     .status(response?.status || 500)
     .set(headers)
     .send(response?.body || "");
 });
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 9000;
 
 app.listen(port, () => console.log(`Server running on ${port}`));

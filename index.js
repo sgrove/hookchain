@@ -3,9 +3,10 @@ var app = express();
 const { fetch } = require("fetch-ponyfill")({});
 
 const callChain = async (params) => {
-  console.log(params);
+  const appId = params.appId;
+  delete params.appId;
   const response = await fetch(
-    "https://serve.onegraph.com/graphql?app_id=b5f2d0a0-da25-4e8e-b25e-8ebe6c6d685c",
+    `https://serve.onegraph.com/graphql?app_id=${appId}`,
     {
       method: "POST",
       "Content-Type": "application/json",
@@ -20,13 +21,14 @@ const callChain = async (params) => {
   return response.json();
 };
 
-app.get("/chain/:chainId", async function (req, res) {
-  const { chainId } = req.params;
+app.get("/app/:appId/chain/:chainId", async function (req, res) {
+  const { appId, chainId } = req.params;
   let incomingHeaders = Object.entries(req.headers);
   let body = req.body || "";
   let jsonBody = JSON.parse(req.body || "null");
   let metadata = {};
   const params = {
+    appId: appId,
     chainId: chainId,
     headers: incomingHeaders,
     path: req.path,
@@ -39,13 +41,12 @@ app.get("/chain/:chainId", async function (req, res) {
 
   const result = await callChain(params);
 
-  console.log("Result:\n", JSON.stringify(result, null, 2));
   const results = result?.data?.oneGraph?.executeChain?.results;
 
   console.log(results);
 
   const argumentDependencies = results
-    .find((i) => i.request.id === "OutgoingHttpResponse")
+    ?.find((i) => i.request.id === "OutgoingHttpResponse")
     ?.argumentDependencies?.map((argDep) => [
       argDep.name,
       argDep.returnValues?.[0],
